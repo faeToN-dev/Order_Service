@@ -8,7 +8,8 @@ import uu.app.order_service.service.OrderService;
 // -- Анотації Spring Web для створення REST API. 
 import org.springframework.web.bind.annotation.*;
 // Позначає клас як REST-контролер — всі методи будуть повертати JSON-відповіді.
-// Spring автоматично обробляє HTTP-запити до цього класу. 
+// Spring автоматично обробляє HTTP-запити до цього класу.
+import jakarta.servlet.http.HttpServletRequest;
 @RestController
 // Встановлює базовий шлях для всіх запитів до цього контролера: /orders. 
 @RequestMapping("/orders")
@@ -26,9 +27,9 @@ public class OrderController {
     @PostMapping
     // Метод createOrder приймає JSON з тіла запиту, який автоматично
     // перетворюється у OrderEntity за допомогою анотації @RequestBody.
-    public OrderEntity createOrder(@RequestBody OrderEntity order) {
+    public OrderEntity createOrder(@RequestBody OrderEntity order, HttpServletRequest request) {
         // Передає об’єкт замовлення до OrderService для обробки.
         // Повертає результат — створене замовлення.
-        return orderService.createOrder(order);
+        return orderService.createOrder(order, request);
     }
 }

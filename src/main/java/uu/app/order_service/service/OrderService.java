@@ -10,32 +10,34 @@ import uu.app.order_service.repository.OrderRepository;
 // -- анотація, яка позначає цей клас як сервісний компонент у Spring. 
 import org.springframework.stereotype.Service;
 // Робить цей клас сервісним компонентом Spring, який можна інжектити в інші класи.
-// Цей відповідає за бізнес-логіку, пов’язану із замовленнями. 
+// Цей відповідає за бізнес-логіку, пов’язану із замовленнями.
+import org.springframework.web.client.RestTemplate;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 @Service
 public class OrderService {
-    // Оголошення залежностей:
-    // -- для збереження замовлень у БД.
     private final OrderRepository orderRepository;
-    // -- для отримання даних користувача з іншого мікросервісу
     private final UserClient userClient;
-    // Конструктор з ін’єкцією залежностей.
-    // Spring автоматично передає реалізації під час створення цього сервісу.
-    public OrderService(OrderRepository orderRepository, UserClient
-            userClient) {
+    private final RestTemplate restTemplate;
+    public OrderService(RestTemplate restTemplate, OrderRepository orderRepository, UserClient userClient) {
         this.orderRepository = orderRepository;
         this.userClient = userClient;
+        this.restTemplate = restTemplate;
     }
-    // Метод createOrder приймає об'єкт замовлення (OrderEntity)
-    // і створює новий запис у базі даних.
-    public OrderEntity createOrder(OrderEntity order) {
-        // Через UserClient виконується HTTP-запит до мікросервісу користувачів
-        // для перевірки, чи існує користувач з переданим userId.
-        UserDTO user = userClient.getUser(order.getUserId());
-        // Якщо користувач не знайдений — генерується виняток, і замовлення не буде створено.
-        if (user == null) {
-            throw new RuntimeException("User not found");
-        }
-        // Якщо користувач знайдений — замовлення зберігається в базі через orderRepository.
+    public OrderEntity createOrder(OrderEntity order, HttpServletRequest request) {
+        String authHeader = request.getHeader("Authorization");
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", authHeader);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+        ResponseEntity<UserDTO> userResponse = restTemplate.exchange(
+                "http://localhost:8081/users/" + order.getUserId(),
+                HttpMethod.GET,
+                entity,
+                UserDTO.class
+        );
         return orderRepository.save(order);
     }
 }
